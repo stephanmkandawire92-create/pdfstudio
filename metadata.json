@@ -1,0 +1,6 @@
+{
+  "name": "PDF Studio",
+  "description": "Advanced PDF Reader & Document Studio with comprehensive tools for reading, annotating, signing, scanning, merging, splitting, compressing, OCR, and batch processing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
