@@ -119,27 +119,33 @@ fun ToolsScreen(
             val outDir = File(context.filesDir, "user_pdfs")
             outDir.mkdirs()
             
-            val actionToRun = extraAction ?: tool.action
-            val resultFile = actionToRun(context, uris, outDir)
-            if (tool.returnsFile) {
-                if (resultFile != null && resultFile.exists()) {
-                    val newDoc = DocumentEntity(
-                        title = resultFile.nameWithoutExtension,
-                        filePath = resultFile.absolutePath,
-                        pageCount = 1, // Approximation
-                        fileSize = resultFile.length(),
-                        tags = "Tool Output"
-                    )
-                    viewModel.repository.updateDocument(newDoc)
-                    Toast.makeText(context, "Success!", Toast.LENGTH_SHORT).show()
-                    onOpenDocument(newDoc)
-                } else {
-                    Toast.makeText(context, "Operation failed or not supported.", Toast.LENGTH_SHORT).show()
+            try {
+                val actionToRun = extraAction ?: tool.action
+                val resultFile = actionToRun(context, uris, outDir)
+                if (tool.returnsFile) {
+                    if (resultFile != null && resultFile.exists()) {
+                        val newDoc = DocumentEntity(
+                            title = resultFile.nameWithoutExtension,
+                            filePath = resultFile.absolutePath,
+                            pageCount = 1, // Approximation
+                            fileSize = resultFile.length(),
+                            tags = "Tool Output"
+                        )
+                        viewModel.repository.updateDocument(newDoc)
+                        Toast.makeText(context, "Success!", Toast.LENGTH_SHORT).show()
+                        onOpenDocument(newDoc)
+                    } else {
+                        Toast.makeText(context, "Operation failed or returned null.", Toast.LENGTH_SHORT).show()
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                isProcessing = false
+                activeTool = null
+                pendingUris = null
             }
-            isProcessing = false
-            activeTool = null
-            pendingUris = null
         }
     }
 
@@ -180,11 +186,7 @@ fun ToolsScreen(
         PdfTool("Remove Blank", Icons.Default.DeleteOutline) { ctx, uris, out -> PdfToolsEngine.removeBlankPages(ctx, uris.first(), out) },
         PdfTool("Add Page #s", Icons.Default.FormatListNumbered) { ctx, uris, out -> PdfToolsEngine.addPageNumbers(ctx, uris.first(), PdfToolsEngine.PageNumberPosition.FOOTER, out) },
         PdfTool("Watermark", Icons.Default.WaterDrop) { ctx, uris, out -> PdfToolsEngine.addWatermark(ctx, uris.first(), "CONFIDENTIAL", out) },
-        PdfTool("Print PDF", Icons.Default.Print, returnsFile = false) { ctx, uris, _ -> PdfToolsEngine.printPdf(ctx, uris.first()); null },
-        PdfTool("Word to PDF", Icons.Default.Description, returnsFile = false) { _, _, _ -> Toast.makeText(context, "Requires Cloud Conversion", Toast.LENGTH_SHORT).show(); null },
-        PdfTool("PDF to Word", Icons.Default.Description, returnsFile = false) { _, _, _ -> Toast.makeText(context, "Requires Cloud Conversion", Toast.LENGTH_SHORT).show(); null },
-        PdfTool("Excel to PDF", Icons.Default.TableChart, returnsFile = false) { _, _, _ -> Toast.makeText(context, "Requires Cloud Conversion", Toast.LENGTH_SHORT).show(); null },
-        PdfTool("PDF to Excel", Icons.Default.TableChart, returnsFile = false) { _, _, _ -> Toast.makeText(context, "Requires Cloud Conversion", Toast.LENGTH_SHORT).show(); null }
+        PdfTool("Print PDF", Icons.Default.Print, returnsFile = false) { ctx, uris, _ -> PdfToolsEngine.printPdf(ctx, uris.first()); null }
     )
 
     Scaffold(
