@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -82,6 +83,25 @@ class PdfAppViewModel(application: Application) : AndroidViewModel(application) 
     val isGridView = MutableStateFlow(false)
     val isAppDarkMode = MutableStateFlow(false)
 
+    private val prefs = application.getSharedPreferences("pdf_studio_prefs", android.content.Context.MODE_PRIVATE)
+    val isAutoBackupEnabled = MutableStateFlow(prefs.getBoolean("auto_backup_enabled", false))
+
+    fun toggleAutoBackup() {
+        val newValue = !isAutoBackupEnabled.value
+        isAutoBackupEnabled.value = newValue
+
+        if (newValue && currentUser.value != null) {
+            backupAllDocumentsToCloud()
+        }
+        prefs.edit().putBoolean("auto_backup_enabled", newValue).apply()
+    }
+
+    val externalUriToOpen = MutableStateFlow<Uri?>(null)
+
+    fun setExternalUri(uri: Uri?) {
+        externalUriToOpen.value = uri
+    }
+
     // Active document viewer state
     private val _viewerState = MutableStateFlow(ActivePdfState())
     val viewerState: StateFlow<ActivePdfState> = _viewerState.asStateFlow()
@@ -122,6 +142,15 @@ class PdfAppViewModel(application: Application) : AndroidViewModel(application) 
     init {
         viewModelScope.launch {
             repository.seedSampleDocumentsIfEmpty()
+        }
+
+        viewModelScope.launch {
+            repository.allDocuments.collectLatest { 
+                kotlinx.coroutines.delay(3000)
+                if (isAutoBackupEnabled.value && currentUser.value != null) {
+                    backupAllDocumentsToCloud()
+                }
+            }
         }
     }
 
@@ -301,7 +330,7 @@ class PdfAppViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     // Import from URI
-    fun importPdf(uri: Uri, displayName: String?) {
+    fun importPdf(uri: Uri, displayName: String?, onComplete: ((DocumentEntity?) -> Unit)? = null) {
         viewModelScope.launch {
             val doc = repository.importPdfFromUri(uri, displayName)
             if (doc != null) {
@@ -309,6 +338,7 @@ class PdfAppViewModel(application: Application) : AndroidViewModel(application) 
             } else {
                 Toast.makeText(getApplication(), "Failed to import PDF", Toast.LENGTH_SHORT).show()
             }
+            onComplete?.invoke(doc)
         }
     }
 

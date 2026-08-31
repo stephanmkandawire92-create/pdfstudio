@@ -3,6 +3,7 @@ package com.example.ui
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.example.engine.SyncState
 import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -127,8 +128,8 @@ fun getFileTypeData(title: String, filePath: String): Pair<ImageVector, Color> {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun HomeScreen(
     viewModel: PdfAppViewModel,
     onOpenDocument: (DocumentEntity) -> Unit,
@@ -142,6 +143,10 @@ fun HomeScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val isGridView by viewModel.isGridView.collectAsState()
     val isDarkMode by viewModel.isAppDarkMode.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
+    val syncState by viewModel.syncState.collectAsState()
+    val lastBackupTime by viewModel.lastBackupTime.collectAsState()
+    val isAutoBackupEnabled by viewModel.isAutoBackupEnabled.collectAsState()
 
     var isSearchActive by remember { mutableStateOf(false) }
     var selectedDocForUnlock by remember { mutableStateOf<DocumentEntity?>(null) }
@@ -338,6 +343,8 @@ fun HomeScreen(
                     }
                 }
             }
+
+            Spacer(Modifier.height(8.dp))
 
             // Category / Filter Tabs
             ScrollableTabRow(
@@ -560,21 +567,21 @@ fun HomeScreen(
 
 @Composable
 fun QuickActionItem(
-    icon: ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     onClick: () -> Unit
 ) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(onClick = onClick)
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+        modifier = androidx.compose.ui.Modifier.clickable(onClick = onClick)
     ) {
         Box(
-            modifier = Modifier
-                .size(44.dp)
-                .background(Color.White.copy(alpha = 0.2f), CircleShape),
-            contentAlignment = Alignment.Center
+            modifier = androidx.compose.ui.Modifier
+                .size(48.dp)
+                .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = androidx.compose.ui.Alignment.Center
         ) {
-            Icon(icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(22.dp))
+            androidx.compose.material3.Icon(icon, contentDescription = null, tint = androidx.compose.ui.graphics.Color.White)
         }
         Spacer(Modifier.height(6.dp))
         Text(text = label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
@@ -582,16 +589,16 @@ fun QuickActionItem(
 }
 
 @Composable
-fun DocumentListCard(
-    document: DocumentEntity,
+fun DocumentGridCard(
+    document: com.example.data.DocumentEntity,
     thumbnail: android.graphics.Bitmap?,
     onOpen: () -> Unit,
     onToggleFavorite: () -> Unit,
-    onDelete: () -> Unit,
+    onCompress: () -> Unit,
+    onBackupToCloud: () -> Unit,
     onRename: () -> Unit,
     onShare: () -> Unit,
-    onCompress: () -> Unit = {},
-    onBackupToCloud: () -> Unit = {}
+    onDelete: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val formattedDate = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(document.lastOpenedTimestamp))
@@ -727,16 +734,16 @@ fun DocumentListCard(
 }
 
 @Composable
-fun DocumentGridCard(
-    document: DocumentEntity,
+fun DocumentListCard(
+    document: com.example.data.DocumentEntity,
     thumbnail: android.graphics.Bitmap?,
     onOpen: () -> Unit,
     onToggleFavorite: () -> Unit,
-    onDelete: () -> Unit,
+    onCompress: () -> Unit,
+    onBackupToCloud: () -> Unit,
     onRename: () -> Unit,
     onShare: () -> Unit,
-    onCompress: () -> Unit = {},
-    onBackupToCloud: () -> Unit = {}
+    onDelete: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     

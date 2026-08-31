@@ -39,6 +39,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -76,6 +78,7 @@ fun CloudSyncDialog(
     val syncState by viewModel.syncState.collectAsState()
     val lastBackupTime by viewModel.lastBackupTime.collectAsState()
     val cloudDocs by viewModel.cloudDocuments.collectAsState()
+    val isAutoBackupEnabled by viewModel.isAutoBackupEnabled.collectAsState()
 
     var isSigningIn by remember { mutableStateOf(false) }
 
@@ -260,6 +263,28 @@ fun CloudSyncDialog(
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                     Spacer(Modifier.height(8.dp))
+                }
+
+                if (currentUser != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Automatic Cloud Backup", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Sync local files to the cloud automatically", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = isAutoBackupEnabled,
+                            onCheckedChange = { viewModel.toggleAutoBackup() },
+                            colors = SwitchDefaults.colors(checkedThumbColor = PdfRed, checkedTrackColor = PdfRed.copy(alpha = 0.5f))
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
                 }
 
                 // Action Buttons
