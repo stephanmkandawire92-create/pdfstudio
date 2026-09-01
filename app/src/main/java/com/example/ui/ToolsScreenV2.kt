@@ -18,15 +18,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CallSplit
+import androidx.compose.material.icons.automirrored.filled.CallSplit
+import androidx.compose.material.icons.automirrored.filled.MergeType
+import androidx.compose.material.icons.automirrored.filled.RotateRight
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.FilterNone
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.MergeType
 import androidx.compose.material.icons.filled.Print
-import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Transform
 import androidx.compose.material.icons.filled.WaterDrop
@@ -160,8 +160,8 @@ fun ToolsScreenV2(viewModel: PdfAppViewModel, onBack: () -> Unit, onOpenDocument
 }
 
 private fun iconFor(name: String) = when (name) {
-    "Merge PDFs" -> Icons.Default.MergeType; "Split PDF" -> Icons.Default.CallSplit; "Extract Pages" -> Icons.Default.FilterNone
-    "Rotate PDF" -> Icons.Default.RotateRight; "Protect PDF" -> Icons.Default.Lock; "Unlock PDF" -> Icons.Default.LockOpen
+    "Merge PDFs" -> Icons.AutoMirrored.Filled.MergeType; "Split PDF" -> Icons.AutoMirrored.Filled.CallSplit; "Extract Pages" -> Icons.Default.FilterNone
+    "Rotate PDF" -> Icons.AutoMirrored.Filled.RotateRight; "Protect PDF" -> Icons.Default.Lock; "Unlock PDF" -> Icons.Default.LockOpen
     "Images to PDF", "PDF to Images" -> Icons.Default.Image; "PDF to Text" -> Icons.Default.TextFields; "Remove Blank" -> Icons.Default.DeleteOutline
     "Watermark" -> Icons.Default.WaterDrop; "Resize Pages" -> Icons.Default.Transform; else -> Icons.Default.Print
 }

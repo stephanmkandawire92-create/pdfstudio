@@ -134,7 +134,7 @@ fun CloudSyncDialog(
                             Button(
                                 onClick = {
                                     isSigningIn = true
-                                    viewModel.signInWithGoogle { success, error ->
+                                    viewModel.signInWithGoogle(com.example.BuildConfig.GOOGLE_WEB_CLIENT_ID) { success, error ->
                                         isSigningIn = false
                                         if (success) {
                                             Toast.makeText(context, "Signed in successfully!", Toast.LENGTH_SHORT).show()

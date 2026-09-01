@@ -1,5 +1,7 @@
 package com.example.ui
 
+import com.example.util.findActivity
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -148,7 +150,27 @@ fun HomeScreen(
     val lastBackupTime by viewModel.lastBackupTime.collectAsState()
     val isAutoBackupEnabled by viewModel.isAutoBackupEnabled.collectAsState()
 
+
     var isSearchActive by remember { mutableStateOf(false) }
+
+    val openDocumentWithAd = { doc: com.example.data.DocumentEntity ->
+        val activity = context.findActivity()
+        if (activity != null) {
+            com.example.util.AdManager.showInterstitial(activity) { onOpenDocument(doc) }
+        } else {
+            onOpenDocument(doc)
+        }
+    }
+
+    val navigateScannerWithAd = {
+        val activity = context.findActivity()
+        if (activity != null) {
+            com.example.util.AdManager.showInterstitial(activity) { onNavigateScanner() }
+        } else {
+            onNavigateScanner()
+        }
+    }
+
     var selectedDocForUnlock by remember { mutableStateOf<DocumentEntity?>(null) }
     var selectedDocForCompression by remember { mutableStateOf<DocumentEntity?>(null) }
     var docToRename by remember { mutableStateOf<DocumentEntity?>(null) }
@@ -260,13 +282,16 @@ fun HomeScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onNavigateScanner,
+                onClick = navigateScannerWithAd,
                 icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
                 text = { Text("Scan Document", fontWeight = FontWeight.Bold) },
                 containerColor = PdfRed,
                 contentColor = Color.White,
                 modifier = Modifier.testTag("scan_fab_button")
             )
+        },
+        bottomBar = {
+            AdMobBanner()
         }
     ) { innerPadding ->
         Column(
@@ -322,7 +347,7 @@ fun HomeScreen(
                             QuickActionItem(
                                 icon = Icons.Default.CameraAlt,
                                 label = "Scan Doc",
-                                onClick = onNavigateScanner
+                                onClick = navigateScannerWithAd
                             )
                             QuickActionItem(
                                 icon = Icons.Default.FolderOpen,
@@ -424,7 +449,7 @@ fun HomeScreen(
                                 if (doc.isEncrypted) {
                                     selectedDocForUnlock = doc
                                 } else {
-                                    onOpenDocument(doc)
+                                    openDocumentWithAd(doc)
                                 }
                             },
                             onToggleFavorite = { viewModel.toggleFavorite(doc) },
@@ -458,7 +483,7 @@ fun HomeScreen(
                                 if (doc.isEncrypted) {
                                     selectedDocForUnlock = doc
                                 } else {
-                                    onOpenDocument(doc)
+                                    openDocumentWithAd(doc)
                                 }
                             },
                             onToggleFavorite = { viewModel.toggleFavorite(doc) },
@@ -498,7 +523,7 @@ fun HomeScreen(
             onDismiss = { selectedDocForCompression = null },
             onOpenDocument = { compressedDoc ->
                 selectedDocForCompression = null
-                onOpenDocument(compressedDoc)
+                openDocumentWithAd(compressedDoc)
             }
         )
     }
@@ -513,7 +538,7 @@ fun HomeScreen(
                 val toOpen = selectedDocForUnlock
                 selectedDocForUnlock = null
                 if (toOpen != null) {
-                    onOpenDocument(toOpen)
+                    openDocumentWithAd(toOpen)
                 }
             }
         )

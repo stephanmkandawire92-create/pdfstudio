@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.ads.MobileAds
 import com.example.ui.BatchStudioScreen
 import com.example.ui.HomeScreen
 import com.example.ui.PdfAppViewModel
@@ -30,6 +31,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MobileAds.initialize(this) {}
+        com.example.util.AdManager.loadInterstitial(this)
+        com.example.util.AdManager.loadRewarded(this)
         enableEdgeToEdge()
         handleIntent(intent)
         setContent {

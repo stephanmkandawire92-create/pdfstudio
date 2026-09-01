@@ -1,5 +1,8 @@
 package com.example.ui
 
+import com.example.util.AdManager
+import com.example.util.findActivity
+
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -442,40 +445,53 @@ fun PdfCompressionDialog(
             if (compressionReport == null) {
                 Button(
                     onClick = {
-                        isCompressing = true
-                        scope.launch {
-                            val origFile = File(document.filePath)
-                            val outDir = File(context.filesDir, "user_pdfs")
-                            outDir.mkdirs()
-                            val cleanTitle = "${document.title.removeSuffix(".pdf")}_compressed_${System.currentTimeMillis() % 10000}"
-                            val outFile = File(outDir, "$cleanTitle.pdf")
+                        val activity = context.findActivity()
+                        val executeCompression = {
+                            isCompressing = true
+                            scope.launch {
+                                val origFile = File(document.filePath)
+                                val outDir = File(context.filesDir, "user_pdfs")
+                                outDir.mkdirs()
+                                val cleanTitle = "${document.title.removeSuffix(".pdf")}_compressed_${System.currentTimeMillis() % 10000}"
+                                val outFile = File(outDir, "$cleanTitle.pdf")
 
-                            val report = PdfCompressionEngine.compressPdfDocument(
-                                context = context,
-                                inputFile = origFile,
-                                outputFile = outFile,
-                                config = currentConfig,
-                                onProgress = { cur, tot ->
-                                    progressCurrentPage = cur
-                                    progressTotalPages = tot
-                                }
-                            )
-
-                            isCompressing = false
-                            compressionReport = report
-
-                            if (report.isSuccess && report.compressedFile != null) {
-                                val newDoc = DocumentEntity(
-                                    title = report.compressedFile.nameWithoutExtension,
-                                    filePath = report.compressedFile.absolutePath,
-                                    pageCount = report.pageCount,
-                                    fileSize = report.compressedSizeBytes,
-                                    tags = "Compressed"
+                                val report = PdfCompressionEngine.compressPdfDocument(
+                                    context = context,
+                                    inputFile = origFile,
+                                    outputFile = outFile,
+                                    config = currentConfig,
+                                    onProgress = { cur, tot ->
+                                        progressCurrentPage = cur
+                                        progressTotalPages = tot
+                                    }
                                 )
-                                createdDocEntity = newDoc
-                                viewModel.repository.updateDocument(newDoc)
-                                Toast.makeText(context, "Saved compressed PDF (${formatFileSize(report.compressedSizeBytes)})", Toast.LENGTH_SHORT).show()
+
+                                isCompressing = false
+                                compressionReport = report
+
+                                if (report.isSuccess && report.compressedFile != null) {
+                                    val newDoc = DocumentEntity(
+                                        title = report.compressedFile.nameWithoutExtension,
+                                        filePath = report.compressedFile.absolutePath,
+                                        pageCount = report.pageCount,
+                                        fileSize = report.compressedSizeBytes,
+                                        tags = "Compressed"
+                                    )
+                                    createdDocEntity = newDoc
+                                    viewModel.repository.updateDocument(newDoc)
+                                    Toast.makeText(context, "Saved compressed PDF (${formatFileSize(report.compressedSizeBytes)})", Toast.LENGTH_SHORT).show()
+                                }
                             }
+                        }
+
+                        if (activity != null) {
+                            AdManager.showRewarded(
+                                activity = activity,
+                                onRewardEarned = { executeCompression() },
+                                onAdDismissed = {}
+                            )
+                        } else {
+                            executeCompression()
                         }
                     },
                     enabled = !isCompressing,
