@@ -22,10 +22,10 @@ import com.example.ui.HomeScreen
 import com.example.ui.PdfAppViewModel
 import com.example.ui.PdfViewerScreen
 import com.example.ui.ScannerScreen
+import com.example.ui.ToolsScreenV2
 import com.example.ui.theme.PDFStudioTheme
 
 class MainActivity : ComponentActivity() {
-
     private val viewModel: PdfAppViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,9 +34,7 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         setContent {
             val isDark by viewModel.isAppDarkMode.collectAsState()
-            PDFStudioTheme(darkTheme = isDark) {
-                PdfAppNavigation(viewModel = viewModel, activity = this)
-            }
+            PDFStudioTheme(darkTheme = isDark) { PdfAppNavigation(viewModel, this) }
         }
     }
 
@@ -46,9 +44,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
-        if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
-            viewModel.setExternalUri(intent.data)
-        }
+        if (intent.action == Intent.ACTION_VIEW) intent.data?.let(viewModel::setExternalUri)
     }
 
     fun getFileName(uri: Uri): String? {
@@ -57,19 +53,11 @@ class MainActivity : ComponentActivity() {
             contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (index != -1) {
-                        result = cursor.getString(index)
-                    }
+                    if (index >= 0) result = cursor.getString(index)
                 }
             }
         }
-        if (result == null) {
-            result = uri.path?.let { path ->
-                val cut = path.lastIndexOf('/')
-                if (cut != -1) path.substring(cut + 1) else path
-            }
-        }
-        return result
+        return result ?: uri.path?.substringAfterLast('/')
     }
 }
 
@@ -80,99 +68,49 @@ fun PdfAppNavigation(viewModel: PdfAppViewModel, activity: MainActivity) {
 
     LaunchedEffect(externalUri) {
         externalUri?.let { uri ->
-            val displayName = activity.getFileName(uri)
-            viewModel.importPdf(uri, displayName) { doc ->
+            viewModel.importPdf(uri, activity.getFileName(uri)) { doc ->
                 if (doc != null) {
                     viewModel.openDocument(doc)
-                    navController.navigate("viewer") {
-                        popUpTo("home")
-                    }
+                    navController.navigate("viewer") { popUpTo("home") }
                 }
             }
             viewModel.setExternalUri(null)
         }
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = "home",
-        modifier = Modifier.fillMaxSize()
-    ) {
+    NavHost(navController, startDestination = "home", modifier = Modifier.fillMaxSize()) {
         composable("home") {
             HomeScreen(
                 viewModel = viewModel,
-                onOpenDocument = { doc ->
-                    viewModel.openDocument(doc)
-                    navController.navigate("viewer")
-                },
-                onNavigateScanner = {
-                    viewModel.clearScannedBitmaps()
-                    navController.navigate("scanner")
-                },
-                onNavigateBatchStudio = {
-                    navController.navigate("batch_studio")
-                },
-                onNavigateTools = {
-                    navController.navigate("tools")
-                }
+                onOpenDocument = { doc -> viewModel.openDocument(doc); navController.navigate("viewer") },
+                onNavigateScanner = { viewModel.clearScannedBitmaps(); navController.navigate("scanner") },
+                onNavigateBatchStudio = { navController.navigate("batch_studio") },
+                onNavigateTools = { navController.navigate("tools") }
             )
         }
-
         composable("viewer") {
-            PdfViewerScreen(
-                viewModel = viewModel,
-                onBack = {
-                    viewModel.closeDocument()
-                    navController.popBackStack()
-                }
-            )
+            PdfViewerScreen(viewModel) { viewModel.closeDocument(); navController.popBackStack() }
         }
-
         composable("scanner") {
             ScannerScreen(
                 viewModel = viewModel,
-                onBack = {
-                    viewModel.clearScannedBitmaps()
-                    navController.popBackStack()
-                },
-                onPdfCreated = { doc ->
-                    viewModel.openDocument(doc)
-                    navController.navigate("viewer") {
-                        popUpTo("home")
-                    }
-                }
+                onBack = { viewModel.clearScannedBitmaps(); navController.popBackStack() },
+                onPdfCreated = { doc -> viewModel.openDocument(doc); navController.navigate("viewer") { popUpTo("home") } }
             )
         }
-
         composable("batch_studio") {
             BatchStudioScreen(
                 viewModel = viewModel,
-                onBack = {
-                    navController.popBackStack()
-                },
-                onOpenDocument = { doc ->
-                    viewModel.openDocument(doc)
-                    navController.navigate("viewer") {
-                        popUpTo("home")
-                    }
-                }
+                onBack = { navController.popBackStack() },
+                onOpenDocument = { doc -> viewModel.openDocument(doc); navController.navigate("viewer") { popUpTo("home") } }
             )
         }
-
         composable("tools") {
-            com.example.ui.ToolsScreen(
+            ToolsScreenV2(
                 viewModel = viewModel,
-                onBack = {
-                    navController.popBackStack()
-                },
-                onOpenDocument = { doc ->
-                    viewModel.openDocument(doc)
-                    navController.navigate("viewer") {
-                        popUpTo("home")
-                    }
-                }
+                onBack = { navController.popBackStack() },
+                onOpenDocument = { doc -> viewModel.openDocument(doc); navController.navigate("viewer") { popUpTo("home") } }
             )
         }
     }
 }
-
