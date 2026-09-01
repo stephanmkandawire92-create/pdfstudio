@@ -72,6 +72,8 @@ import androidx.compose.ui.unit.sp
 import com.example.data.DocumentEntity
 import com.example.engine.PdfCompressionEngine
 import com.example.engine.PdfEngine
+import com.example.engine.PdfToolsEngine
+import com.example.engine.PdfToolsAdvancedEngine
 import com.example.ui.theme.AccentEmerald
 import com.example.ui.theme.PdfRed
 import kotlinx.coroutines.launch
@@ -375,28 +377,19 @@ fun BatchStudioScreen(
                             onClick = {
                                 isProcessing = true
                                 scope.launch {
-                                    val files = selectedDocIds.mapNotNull { id ->
-                                        allDocs.find { it.id == id }?.let { File(it.filePath) }
-                                    }
-                                    val outDir = File(context.filesDir, "user_pdfs")
-                                    outDir.mkdirs()
-                                    val safeTitle = operationTitle.ifBlank { "Merged_${System.currentTimeMillis() % 10000}" }
-                                    val outFile = File(outDir, "$safeTitle.pdf")
-                                    val success = PdfEngine.mergePdfs(files, outFile)
-                                    isProcessing = false
-                                    if (success) {
-                                        val count = PdfEngine.getPageCount(outFile)
-                                        val newDoc = DocumentEntity(
-                                            title = safeTitle,
-                                            filePath = outFile.absolutePath,
-                                            pageCount = count,
-                                            fileSize = outFile.length(),
-                                            tags = "Merged"
-                                        )
-                                        viewModel.repository.updateDocument(newDoc)
-                                        Toast.makeText(context, "Merged into $safeTitle.pdf!", Toast.LENGTH_SHORT).show()
+                                    val files = selectedDocIds.mapNotNull { id -> allDocs.find { it.id == id }?.filePath?.let { File(it) } }
+                                val uris = files.map { Uri.fromFile(it) }
+                                val outDir = File(context.filesDir, "user_pdfs")
+                                outDir.mkdirs()
+                                val outFile = PdfToolsEngine.mergePdfs(context, uris, outDir)
+                                isProcessing = false
+                                if (outFile != null) {
+                                    val newDoc = viewModel.repository.registerGeneratedPdf(outFile, "Merged")
+                                    if (newDoc != null) {
+                                        Toast.makeText(context, "Merged successfully!", Toast.LENGTH_SHORT).show()
                                         onOpenDocument(newDoc)
                                     }
+                                }
                                 }
                             },
                             enabled = !isProcessing && selectedDocIds.size >= 2,
@@ -445,7 +438,7 @@ fun BatchStudioScreen(
                         Spacer(Modifier.height(12.dp))
 
                         Text("Compression Level: ${compressionQuality.toInt()}% Quality", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Slider(
+                        androidx.compose.material3.Slider(
                             value = compressionQuality,
                             onValueChange = { compressionQuality = it },
                             valueRange = 25f..90f
@@ -462,39 +455,22 @@ fun BatchStudioScreen(
                                     val outDir = File(context.filesDir, "user_pdfs")
                                     outDir.mkdirs()
                                     val outFile = File(outDir, "${doc.title}_compressed_${System.currentTimeMillis() % 10000}.pdf")
-                                    
-                                    val config = PdfCompressionEngine.CompressionConfig(
-                                        preset = PdfCompressionEngine.CompressionPreset.CUSTOM,
-                                        qualityPercent = compressionQuality.toInt(),
-                                        scaleFactor = (compressionQuality / 100f).coerceIn(0.6f, 1.0f),
-                                        stripMetadata = true
+                                    val config = com.example.engine.PdfCompressionEngine.CompressionConfig(
+                                        qualityPercent = compressionQuality.toInt()
                                     )
-                                    
-                                    val report = PdfCompressionEngine.compressPdfDocument(
+                                    val report = com.example.engine.PdfCompressionEngine.compressPdfDocument(
                                         context = context,
                                         inputFile = origFile,
                                         outputFile = outFile,
                                         config = config
                                     )
-                                    
                                     isProcessing = false
                                     if (report.isSuccess && report.compressedFile != null) {
-                                        val newDoc = DocumentEntity(
-                                            title = report.compressedFile.nameWithoutExtension,
-                                            filePath = report.compressedFile.absolutePath,
-                                            pageCount = report.pageCount,
-                                            fileSize = report.compressedSizeBytes,
-                                            tags = "Compressed"
-                                        )
-                                        viewModel.repository.updateDocument(newDoc)
-                                        Toast.makeText(
-                                            context,
-                                            "Compressed: ${(report.compressedSizeBytes / 1024)} KB (-${report.reductionPercentage.toInt()}%)",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        onOpenDocument(newDoc)
-                                    } else {
-                                        Toast.makeText(context, "Compression failed: ${report.errorMessage}", Toast.LENGTH_SHORT).show()
+                                        val newDoc = viewModel.repository.registerGeneratedPdf(report.compressedFile, "Compressed")
+                                        if (newDoc != null) {
+                                            Toast.makeText(context, "Compressed successfully!", Toast.LENGTH_SHORT).show()
+                                            onOpenDocument(newDoc)
+                                        }
                                     }
                                 }
                             },
@@ -502,88 +478,78 @@ fun BatchStudioScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = AccentEmerald),
                             modifier = Modifier.fillMaxWidth().height(50.dp).testTag("confirm_compress_button")
                         ) {
-                            if (isProcessing) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Compressing...")
-                            } else {
-                                Text("Start Compression & Optimize")
-                            }
+                            Text("Compress PDF")
                         }
                     }
                 }
 
                 BatchToolMode.SPLIT_PDF -> {
                     Column {
-                        Text("Select Document & Pages to Extract", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("Select a Document to Extract Pages From", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         Spacer(Modifier.height(8.dp))
+                        
+                        OutlinedTextField(
+                            value = splitPageRange,
+                            onValueChange = { splitPageRange = it },
+                            label = { Text("Pages to Extract (e.g. 1, 3, 5)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(Modifier.height(10.dp))
 
                         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(allDocs) { doc ->
                                 val isSelected = selectedDocIds.contains(doc.id)
                                 Card(
                                     shape = RoundedCornerShape(10.dp),
-                                    colors = CardDefaults.cardColors(containerColor = if (isSelected) PdfRed.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant),
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        selectedDocIds.clear()
-                                        selectedDocIds.add(doc.id)
-                                    }.border(1.dp, if (isSelected) PdfRed else Color.Transparent, RoundedCornerShape(10.dp))
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected) PdfRed.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedDocIds.clear()
+                                            selectedDocIds.add(doc.id)
+                                        }
+                                        .border(1.dp, if (isSelected) PdfRed else Color.Transparent, RoundedCornerShape(10.dp))
                                 ) {
                                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.CallSplit, contentDescription = null, tint = PdfRed)
                                         Spacer(Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(doc.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("${doc.pageCount} Total Pages", fontSize = 11.sp, color = Color.Gray)
+                                            Text("${doc.pageCount} Pages • ${(doc.fileSize / 1024)} KB", fontSize = 11.sp, color = Color.Gray)
                                         }
                                         if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = PdfRed)
                                     }
                                 }
                             }
                         }
-
-                        Spacer(Modifier.height(10.dp))
-
-                        OutlinedTextField(
-                            value = splitPageRange,
-                            onValueChange = { splitPageRange = it },
-                            label = { Text("Page Numbers (e.g. 1, 2, 3)") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
+                        
                         Spacer(Modifier.height(12.dp))
-
+                        
                         Button(
                             onClick = {
                                 val doc = allDocs.find { it.id == selectedDocIds.firstOrNull() } ?: return@Button
                                 val pages = splitPageRange.split(",").mapNotNull { it.trim().toIntOrNull()?.minus(1) }
                                 if (pages.isEmpty()) return@Button
-
                                 isProcessing = true
                                 scope.launch {
                                     val origFile = File(doc.filePath)
                                     val outDir = File(context.filesDir, "user_pdfs")
                                     outDir.mkdirs()
-                                    val outFile = File(outDir, "${doc.title}_split_${System.currentTimeMillis() % 10000}.pdf")
-                                    val success = PdfEngine.splitPdf(origFile, pages, outFile)
+                                    val outFile = PdfToolsEngine.extractPages(context, Uri.fromFile(origFile), pages, outDir)
                                     isProcessing = false
-                                    if (success) {
-                                        val count = PdfEngine.getPageCount(outFile)
-                                        val newDoc = DocumentEntity(
-                                            title = outFile.nameWithoutExtension,
-                                            filePath = outFile.absolutePath,
-                                            pageCount = count,
-                                            fileSize = outFile.length(),
-                                            tags = "Extracted"
-                                        )
-                                        viewModel.repository.updateDocument(newDoc)
-                                        Toast.makeText(context, "Extracted ${pages.size} pages!", Toast.LENGTH_SHORT).show()
-                                        onOpenDocument(newDoc)
+                                    if (outFile != null) {
+                                        val newDoc = viewModel.repository.registerGeneratedPdf(outFile, "Extracted")
+                                        if (newDoc != null) {
+                                            Toast.makeText(context, "Extracted ${pages.size} pages!", Toast.LENGTH_SHORT).show()
+                                            onOpenDocument(newDoc)
+                                        }
                                     }
                                 }
                             },
-                            enabled = !isProcessing && selectedDocIds.isNotEmpty(),
+                            enabled = !isProcessing && selectedDocIds.isNotEmpty() && splitPageRange.isNotBlank(),
                             colors = ButtonDefaults.buttonColors(containerColor = PdfRed),
                             modifier = Modifier.fillMaxWidth().height(50.dp).testTag("confirm_split_button")
                         ) {
@@ -595,27 +561,32 @@ fun BatchStudioScreen(
                 BatchToolMode.PDF_TO_IMAGES -> {
                     Column {
                         Text("Select Document to Export as Images", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(10.dp))
 
                         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(allDocs) { doc ->
                                 val isSelected = selectedDocIds.contains(doc.id)
                                 Card(
                                     shape = RoundedCornerShape(10.dp),
-                                    colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF7C3AED).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant),
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        selectedDocIds.clear()
-                                        selectedDocIds.add(doc.id)
-                                    }.border(1.dp, if (isSelected) Color(0xFF7C3AED) else Color.Transparent, RoundedCornerShape(10.dp))
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected) androidx.compose.ui.graphics.Color(0xFF7C3AED).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedDocIds.clear()
+                                            selectedDocIds.add(doc.id)
+                                        }
+                                        .border(1.dp, if (isSelected) androidx.compose.ui.graphics.Color(0xFF7C3AED) else Color.Transparent, RoundedCornerShape(10.dp))
                                 ) {
                                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Image, contentDescription = null, tint = Color(0xFF7C3AED))
+                                        Icon(Icons.Default.Image, contentDescription = null, tint = androidx.compose.ui.graphics.Color(0xFF7C3AED))
                                         Spacer(Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(doc.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("${doc.pageCount} Pages to Export", fontSize = 11.sp, color = Color.Gray)
+                                            Text("${doc.pageCount} Pages • ${(doc.fileSize / 1024)} KB", fontSize = 11.sp, color = Color.Gray)
                                         }
-                                        if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF7C3AED))
+                                        if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = androidx.compose.ui.graphics.Color(0xFF7C3AED))
                                     }
                                 }
                             }
@@ -630,13 +601,14 @@ fun BatchStudioScreen(
                                 scope.launch {
                                     val origFile = File(doc.filePath)
                                     val outDir = File(context.filesDir, "exported_images_${System.currentTimeMillis() % 10000}")
-                                    val exported = PdfEngine.exportPdfToImages(origFile, outDir)
+                                    outDir.mkdirs()
+                                    val exported = PdfToolsAdvancedEngine.renderPdfToImages(context, Uri.fromFile(origFile), outDir)
                                     isProcessing = false
                                     Toast.makeText(context, "Exported ${exported.size} PNG images to device!", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             enabled = !isProcessing && selectedDocIds.isNotEmpty(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
+                            colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF7C3AED)),
                             modifier = Modifier.fillMaxWidth().height(50.dp).testTag("confirm_export_images_button")
                         ) {
                             Text("Export All Pages as Images")
@@ -656,7 +628,6 @@ fun BatchStudioScreen(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-
                         Spacer(Modifier.height(10.dp))
 
                         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -664,20 +635,25 @@ fun BatchStudioScreen(
                                 val isSelected = selectedDocIds.contains(doc.id)
                                 Card(
                                     shape = RoundedCornerShape(10.dp),
-                                    colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF0891B2).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant),
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        selectedDocIds.clear()
-                                        selectedDocIds.add(doc.id)
-                                    }.border(1.dp, if (isSelected) Color(0xFF0891B2) else Color.Transparent, RoundedCornerShape(10.dp))
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected) androidx.compose.ui.graphics.Color(0xFF0891B2).copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedDocIds.clear()
+                                            selectedDocIds.add(doc.id)
+                                        }
+                                        .border(1.dp, if (isSelected) androidx.compose.ui.graphics.Color(0xFF0891B2) else Color.Transparent, RoundedCornerShape(10.dp))
                                 ) {
                                     Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.WaterDrop, contentDescription = null, tint = Color(0xFF0891B2))
+                                        Icon(Icons.Default.WaterDrop, contentDescription = null, tint = androidx.compose.ui.graphics.Color(0xFF0891B2))
                                         Spacer(Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(doc.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                            Text("${doc.pageCount} Pages", fontSize = 11.sp, color = Color.Gray)
+                                            Text("${doc.pageCount} Pages • ${(doc.fileSize / 1024)} KB", fontSize = 11.sp, color = Color.Gray)
                                         }
-                                        if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFF0891B2))
+                                        if (isSelected) Icon(Icons.Default.Check, contentDescription = null, tint = androidx.compose.ui.graphics.Color(0xFF0891B2))
                                     }
                                 }
                             }
@@ -693,26 +669,19 @@ fun BatchStudioScreen(
                                     val origFile = File(doc.filePath)
                                     val outDir = File(context.filesDir, "user_pdfs")
                                     outDir.mkdirs()
-                                    val outFile = File(outDir, "${doc.title}_watermarked_${System.currentTimeMillis() % 10000}.pdf")
-                                    val success = PdfEngine.exportAnnotatedPdf(origFile, emptyList(), outFile, watermarkText)
+                                    val outFile = PdfToolsEngine.addWatermark(context, Uri.fromFile(origFile), watermarkText, outDir)
                                     isProcessing = false
-                                    if (success) {
-                                        val count = PdfEngine.getPageCount(outFile)
-                                        val newDoc = DocumentEntity(
-                                            title = outFile.nameWithoutExtension,
-                                            filePath = outFile.absolutePath,
-                                            pageCount = count,
-                                            fileSize = outFile.length(),
-                                            tags = "Watermarked"
-                                        )
-                                        viewModel.repository.updateDocument(newDoc)
-                                        Toast.makeText(context, "Watermark stamped successfully!", Toast.LENGTH_SHORT).show()
-                                        onOpenDocument(newDoc)
+                                    if (outFile != null) {
+                                        val newDoc = viewModel.repository.registerGeneratedPdf(outFile, "Watermarked")
+                                        if (newDoc != null) {
+                                            Toast.makeText(context, "Watermark stamped successfully!", Toast.LENGTH_SHORT).show()
+                                            onOpenDocument(newDoc)
+                                        }
                                     }
                                 }
                             },
                             enabled = !isProcessing && selectedDocIds.isNotEmpty() && watermarkText.isNotBlank(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0891B2)),
+                            colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color(0xFF0891B2)),
                             modifier = Modifier.fillMaxWidth().height(50.dp).testTag("confirm_watermark_button")
                         ) {
                             Text("Stamp Watermark onto PDF")
