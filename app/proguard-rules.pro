@@ -1,9 +1,10 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# Add project specific ProGuard/R8 rules here.
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# PDFBox Android includes optional JPEG2000 support through the Gemalto JP2
+# classes. Those classes are not required by the Android PDFBox runtime, but
+# PDFBox's JPXFilter references them. R8 can otherwise report them as missing
+# classes during a minified release build.
+-dontwarn com.gemalto.jp2.**
 
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
