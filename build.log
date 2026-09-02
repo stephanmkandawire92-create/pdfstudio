@@ -1,0 +1,90 @@
+Calculating task graph as no cached configuration is available for tasks: :app:bundleRelease
+> Task :app:preBuild UP-TO-DATE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:processReleaseGoogleServices
+> Task :app:generateReleaseBuildConfig
+> Task :app:generateReleaseResources
+> Task :app:packageReleaseResources
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:javaPreCompileRelease
+> Task :app:processReleaseNavigationResources
+> Task :app:parseReleaseLocalResources
+> Task :app:generateReleaseRFile
+> Task :app:mergeReleaseArtProfile
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:checkReleaseAarMetadata
+> Task :app:mergeReleaseAssets
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:compileReleaseNavigationResources
+> Task :app:extractDeepLinksRelease
+> Task :app:extractProguardFiles
+> Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:processReleaseManifestForPackage
+> Task :app:writeReleaseAppMetadata
+> Task :app:mergeReleaseNativeLibs
+
+> Task :app:stripReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so, libimage_processing_util_jni.so, libmlkit_google_ocr_pipeline.so, libsurface_util_jni.so. Run with --info option to learn more.
+
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:parseReleaseIntegrityConfig
+> Task :app:collectReleaseDependencies
+> Task :app:configureReleaseDependencies
+> Task :app:mergeReleaseResources
+> Task :app:processReleaseResources
+> Task :app:kspReleaseKotlin
+> Task :app:compileReleaseKotlin
+w: file:///app/applet/app/src/main/java/com/example/engine/PdfToolsEngine.kt:253:35 'fun setNonStrokingColor(p0: Int, p1: Int, p2: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///app/applet/app/src/main/java/com/example/ui/BatchStudioScreen.kt:210:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///app/applet/app/src/main/java/com/example/ui/BatchStudioScreen.kt:266:54 'val Icons.Filled.MergeType: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.MergeType.
+w: file:///app/applet/app/src/main/java/com/example/ui/BatchStudioScreen.kt:289:54 'val Icons.Filled.CallSplit: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.CallSplit.
+w: file:///app/applet/app/src/main/java/com/example/ui/BatchStudioScreen.kt:412:59 'val Icons.Filled.MergeType: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.MergeType.
+w: file:///app/applet/app/src/main/java/com/example/ui/BatchStudioScreen.kt:593:60 'val Icons.Filled.CallSplit: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.CallSplit.
+w: file:///app/applet/app/src/main/java/com/example/ui/CloudSyncDialog.kt:202:52 'val Icons.Filled.Logout: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Logout.
+w: file:///app/applet/app/src/main/java/com/example/ui/HomeScreen.kt:129:36 'val Icons.Filled.InsertDriveFile: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.InsertDriveFile.
+w: file:///app/applet/app/src/main/java/com/example/ui/HomeScreen.kt:269:59 'val Icons.Filled.ViewList: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ViewList.
+w: file:///app/applet/app/src/main/java/com/example/ui/HomeScreen.kt:728:60 'val Icons.Filled.MenuBook: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.MenuBook.
+w: file:///app/applet/app/src/main/java/com/example/ui/PageManagerDialog.kt:186:59 'val Icons.Filled.RotateRight: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.RotateRight.
+w: file:///app/applet/app/src/main/java/com/example/ui/PageManagerDialog.kt:255:59 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///app/applet/app/src/main/java/com/example/ui/PageManagerDialog.kt:280:59 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///app/applet/app/src/main/java/com/example/ui/PdfCompressionDialog.kt:539:48 'val Icons.Filled.OpenInNew: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.OpenInNew.
+w: file:///app/applet/app/src/main/java/com/example/ui/PdfViewerScreen.kt:182:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///app/applet/app/src/main/java/com/example/ui/PdfViewerScreen.kt:204:83 'val Icons.Filled.MenuBook: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.MenuBook.
+w: file:///app/applet/app/src/main/java/com/example/ui/PdfViewerScreen.kt:366:58 'val Icons.Filled.Note: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Note.
+w: file:///app/applet/app/src/main/java/com/example/ui/PdfViewerScreen.kt:508:48 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///app/applet/app/src/main/java/com/example/ui/PdfViewerScreen.kt:535:48 'val Icons.Filled.ArrowForward: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowForward.
+w: file:///app/applet/app/src/main/java/com/example/ui/ScannerScreen.kt:173:44 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+
+> Task :app:processReleaseJavaRes
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:mergeReleaseGeneratedProguardFiles
+> Task :app:expandReleaseArtProfileWildcards
+> Task :app:mergeReleaseJavaResource
+> Task :app:minifyReleaseWithR8
+ERROR: Missing classes detected while running R8. Please add the missing classes or apply additional keep rules that are generated in /app/applet/app/build/outputs/mapping/release/missing_rules.txt.
+ERROR: R8: Missing class com.gemalto.jp2.JP2Decoder (referenced from: android.graphics.Bitmap com.tom_roush.pdfbox.filter.JPXFilter.readJPX(java.io.InputStream, com.tom_roush.pdfbox.filter.DecodeOptions, com.tom_roush.pdfbox.filter.DecodeResult))
+Missing class com.gemalto.jp2.JP2Encoder (referenced from: void com.tom_roush.pdfbox.filter.JPXFilter.encode(java.io.InputStream, java.io.OutputStream, com.tom_roush.pdfbox.cos.COSDictionary))
+
+> Task :app:minifyReleaseWithR8 FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:minifyReleaseWithR8'.
+> A failure occurred while executing com.android.build.gradle.internal.tasks.R8Task$R8Runnable
+   > Compilation failed to complete
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 58s
+40 actionable tasks: 40 executed
+Configuration cache entry stored.

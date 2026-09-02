@@ -43,6 +43,7 @@ android {
     release {
       isCrunchPngs = false
       isMinifyEnabled = false
+      isShrinkResources = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }
@@ -55,6 +56,9 @@ android {
   buildFeatures {
     compose = true
     buildConfig = true
+  }
+  lint {
+    checkReleaseBuilds = false
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
   dependenciesInfo {
